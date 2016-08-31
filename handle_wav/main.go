@@ -35,21 +35,23 @@ type WavHead struct {
 
 func (head *WavHead) printf() {
 	p := fmt.Println
+	f := fmt.Printf
 	p("------------- WAV HEAD ------------------")
-	p(string(head.RiffFlag[:len(head.RiffFlag)]))
-	p("FileSize:", head.FileSize)
-	fmt.Printf("[%s]\n", string(head.WaveFlag[:len(head.WaveFlag)]))
-	p("FmtFlag:", string(head.FmtFlag[:len(head.FmtFlag)]))
-	p("FmtSize:", head.FmtSize)
-	p("FormatType:", head.FormatType)
-	p("Channels:", head.Channels)
-	p("SampleRate:", head.SampleRate)
-	p("BytePerSecond:", head.BytePerSecond)
-	p("Align:", head.Align)
-	p("BitsPerSample:", head.BitsPerSample)
-	fmt.Printf("[%s]\n", string(head.DataFlag[:len(head.DataFlag)]))
-	p("DataSize:", head.DataSize)
-	p("-----------------------------------------")
+	f("[%s]\n", string(head.RiffFlag[:len(head.RiffFlag)]))
+	p("  FileSize:", head.FileSize)
+
+	f("[%s]\n", string(head.WaveFlag[:len(head.WaveFlag)]))
+	p("  FmtFlag:", string(head.FmtFlag[:len(head.FmtFlag)]))
+	p("  FmtSize:", head.FmtSize)
+	p("  FormatType:", head.FormatType)
+	p("  Channels:", head.Channels)
+	p("  SampleRate:", head.SampleRate)
+	p("  BytePerSecond:", head.BytePerSecond)
+	p("  Align:", head.Align)
+	p("  BitsPerSample:", head.BitsPerSample)
+
+	f("[%s]\n", string(head.DataFlag[:len(head.DataFlag)]))
+	p("  DataSize:", head.DataSize)
 }
 
 func parseWavHead(data []byte) (*WavHead, error) {
@@ -64,35 +66,25 @@ func parseWavHead(data []byte) (*WavHead, error) {
 	return &head, nil
 }
 
-func doHead(file string, headSize int) {
-	trace()
-	data := make([]byte, headSize)
-
-	f, err := os.Open(file)
-	if err != nil {
-		log.Println("open", err)
-		return
-	}
-	defer f.Close()
-
+func parseWavHeadFromFile(f *os.File) (*WavHead, error) {
+	data := make([]byte, WAV_HEAD_SIZE)
 	n, err := f.Read(data)
 	if err != nil {
 		log.Println("read", err)
-		return
+		return nil, err
 	}
 
 	log.Printf("read %d bytes\n", n)
 	head, err := parseWavHead(data)
 	if err != nil {
 		log.Println("parseWavHead failed:", err)
-		return
+		return nil, err
 	}
-	head.printf()
+	return head, nil
 }
 
-func doStrip(file string, headSize int) {
+func doHead(file string) {
 	trace()
-	data := make([]byte, headSize)
 
 	f, err := os.Open(file)
 	if err != nil {
@@ -101,17 +93,21 @@ func doStrip(file string, headSize int) {
 	}
 	defer f.Close()
 
-	_, err = f.Read(data)
-	if err != nil {
-		log.Println("read", err)
-		return
-	}
+	head, err := parseWavHeadFromFile(f)
+	head.printf()
+}
 
-	head, err := parseWavHead(data)
+func doStrip(file string) {
+	trace()
+
+	f, err := os.Open(file)
 	if err != nil {
-		log.Println("parseWavHead failed:", err)
+		log.Println("open", err)
 		return
 	}
+	defer f.Close()
+
+	head, err := parseWavHeadFromFile(f)
 	head.printf()
 
 	out, err := os.OpenFile("output.pcm", os.O_RDWR|os.O_CREATE|os.O_TRUNC, os.ModePerm)
@@ -121,7 +117,6 @@ func doStrip(file string, headSize int) {
 	}
 	defer out.Close()
 
-	size := int(head.DataSize)
 	chunkSize := 1024
 	buf := make([]byte, chunkSize)
 	for {
@@ -135,8 +130,6 @@ func doStrip(file string, headSize int) {
 				break
 			}
 		}
-		size = size - n
-		log.Println("read then write:", n, "left:", size)
 		out.Write(buf[:n])
 	}
 }
@@ -154,9 +147,9 @@ func main() {
 
 	switch cmd {
 	case "head":
-		doHead(inputFile, WAV_HEAD_SIZE)
+		doHead(inputFile)
 	case "strip":
-		doStrip(inputFile, WAV_HEAD_SIZE)
+		doStrip(inputFile)
 	default:
 		log.Printf("invalid cmd: %s\n", cmd)
 	}

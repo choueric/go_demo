@@ -10,7 +10,6 @@ import (
 )
 
 const (
-	URL_PREFIX = "https://trade.fenqile.com/order/detail/"
 	URL_SUFFIX = ".html"
 )
 
@@ -53,7 +52,7 @@ func main() {
 			orderNum := strings.Split(line, "<span>")[1]
 			orderNum = strings.Split(orderNum, "<")[0]
 			//fmt.Println(orderNum)
-			urlSlice = append(urlSlice, URL_PREFIX+orderNum+URL_SUFFIX)
+			urlSlice = append(urlSlice, config.UrlPrefix+orderNum+URL_SUFFIX)
 		}
 	}
 

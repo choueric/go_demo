@@ -10,11 +10,13 @@ const (
 )
 
 const DefaultConfig = `{
-	"chrome": "/opt/google/chrome/chrome"
+	"chrome": "/opt/google/chrome/chrome",
+	"url_prefix": "url_prefix"
 } `
 
 type Config struct {
-	Chrome string `json:"chrome"`
+	Chrome    string `json:"chrome"`
+	UrlPrefix string `json:"url_prefix"`
 }
 
 func getConfig() *Config {

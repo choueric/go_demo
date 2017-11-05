@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"os/exec"
 	"strings"
 )
 
@@ -13,13 +14,18 @@ const (
 	URL_SUFFIX = ".html"
 )
 
-var inputFile = "input.txt"
-var urlSlice = []string{}
+var (
+	inputFile = "input.txt"
+	urlSlice  = []string{}
+	config    *Config
+)
 
 func main() {
 	flag.StringVar(&inputFile, "f", "input.txt", "input file")
 	flag.Parse()
 	fmt.Println("input file:", inputFile)
+
+	config = getConfig()
 
 	f, err := os.Open(inputFile)
 	if err != nil {
@@ -52,6 +58,27 @@ func main() {
 	}
 
 	for _, l := range urlSlice {
-		fmt.Println(l)
+		err := execCmd(l)
+		if err != nil {
+			fmt.Println(err)
+			break
+		}
 	}
+}
+
+// execute command directly.
+func execCmd(url string) error {
+	fmt.Println("open:", url)
+	cmd := exec.Command(config.Chrome, url)
+	err := cmd.Start()
+	if err != nil {
+		return err
+	}
+
+	err = cmd.Wait()
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

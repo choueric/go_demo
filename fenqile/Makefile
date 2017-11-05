@@ -5,3 +5,6 @@ EXEC:main.go
 
 test:$(EXEC)
 	./$(EXEC) -f ~/input.html
+
+clean:
+	rm -rf $(EXEC)
